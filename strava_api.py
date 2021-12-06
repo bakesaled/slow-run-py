@@ -11,6 +11,8 @@ import matplotlib.dates as mdates
 import numpy as np
 from datetime import datetime
 
+import secrets
+
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 pd.set_option('display.width', 1000)
@@ -21,9 +23,9 @@ auth_url = "https://www.strava.com/oauth/token"
 activites_url = "https://www.strava.com/api/v3/athlete/activities"
 
 payload = {
-    'client_id': "67075",
-    'client_secret': '66b6bcb99a22e3d39fe76dac0e7cf3d6be4741e3',
-    'refresh_token': '176b63b70bd0a447a66285299d97f514d7e77e44',
+    'client_id': secrets.cliend_id,
+    'client_secret': secrets.client_secret,
+    'refresh_token': secrets.refresh_token,
     'grant_type': "refresh_token",
     'f': 'json'
 }
