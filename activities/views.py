@@ -5,8 +5,10 @@ from rest_framework.parsers import JSONParser
 from rest_framework import status
 
 from activities.models import Activity
-from activities.serializers import ActivitySerializer
+from activities.serializers import ActivitySerializer, StravaActivitySerializer
 from rest_framework.decorators import api_view
+
+from strava_api import StravaApi
 
 # Create your views here.
 
@@ -58,3 +60,16 @@ def activity_detail(request, pk):
     elif request.method == 'DELETE':
         activity.delete()
         return JsonResponse({'message': 'Activity was deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+def activity_sync(request):
+    if request.method == 'POST':
+        activity_data = StravaApi.sync()
+        # print(activity_data[0])
+        activity_serializer = StravaActivitySerializer(
+            data=activity_data, many=True)
+        if activity_serializer.is_valid():
+            activity_serializer.save()
+            return JsonResponse({'message': 'Activities synced successfully!'}, status=status.HTTP_200_OK)
+        return JsonResponse(activity_serializer.errors, safe=False, status=status.HTTP_400_BAD_REQUEST)
