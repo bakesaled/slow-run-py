@@ -22,7 +22,7 @@ def activity_list(request):
             activities = activities.filter(name__icontains=name)
 
         activities_serializer = ActivitySerializer(activities, many=True)
-        return JsonResponse(activities_serializer.data, safe=False)
+        return JsonResponse({'results': activities_serializer.data}, safe=False)
         # 'safe=False' for objects serialization
     elif request.method == 'POST':
         activity_data = JSONParser().parse(request)

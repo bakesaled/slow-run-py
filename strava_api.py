@@ -23,7 +23,7 @@ auth_url = "https://www.strava.com/oauth/token"
 activites_url = "https://www.strava.com/api/v3/athlete/activities"
 
 payload = {
-    'client_id': secrets.cliend_id,
+    'client_id': secrets.client_id,
     'client_secret': secrets.client_secret,
     'refresh_token': secrets.refresh_token,
     'grant_type': "refresh_token",
@@ -49,7 +49,15 @@ activities = json_normalize(my_dataset)
 
 cols = ['name', 'upload_id', 'type', 'distance', 'moving_time',
         'average_speed', 'max_speed', 'total_elevation_gain',
-        'start_date_local'
+        'start_date_local',
+        'has_heartrate',
+        'average_heartrate',
+        'max_heartrate',
+        'average_watts',
+        'max_watts',
+        'kilojoules',
+        'elev_high',
+        'elev_low',
         ]
 activities = activities[cols]
 activities['start_date_local'] = pd.to_datetime(activities['start_date_local'])
