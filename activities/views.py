@@ -66,9 +66,19 @@ def activity_detail(request, pk):
 def activity_sync(request):
     if request.method == 'POST':
         activity_data = StravaApi.sync()
-        # print(activity_data[0])
+
+        filtered_activity_data = []
+        for activity in activity_data:
+            if not Activity.objects.filter(extern_id=activity['id']).exists():
+                filtered_activity_data.append(activity)
+
+        print(f'Activities pulled from Strava: {len(activity_data)}')
+        print(f'Activities new to us: {len(filtered_activity_data)}')
+        if len(filtered_activity_data) == 0:
+            return JsonResponse({'message': 'No new activities to sync!'}, status=status.HTTP_200_OK)
+
         activity_serializer = StravaActivitySerializer(
-            data=activity_data, many=True)
+            data=filtered_activity_data, many=True)
         if activity_serializer.is_valid():
             activity_serializer.save()
             return JsonResponse({'message': 'Activities synced successfully!'}, status=status.HTTP_200_OK)
