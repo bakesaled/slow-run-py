@@ -23,6 +23,8 @@ def activity_list(request):
         if name is not None:
             activities = activities.filter(name__icontains=name)
 
+        activities = activities.order_by('-start_time_local')
+
         activities_serializer = ActivitySerializer(activities, many=True)
         return JsonResponse({'results': activities_serializer.data}, safe=False)
         # 'safe=False' for objects serialization
