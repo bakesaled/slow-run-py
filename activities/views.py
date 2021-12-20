@@ -23,7 +23,7 @@ def activity_list(request):
         if name is not None:
             activities = activities.filter(name__icontains=name)
 
-        activities = activities.order_by('-start_time_local')
+        activities = activities.order_by('-start_date')
 
         activities_serializer = ActivitySerializer(activities, many=True)
         return JsonResponse({'results': activities_serializer.data}, safe=False)
@@ -79,9 +79,16 @@ def activity_sync(request):
         if len(filtered_activity_data) == 0:
             return JsonResponse({'message': 'No new activities to sync!'}, status=status.HTTP_200_OK)
 
+        # update?  don't think this works yet.
+        for activity in activity_data:
+            if Activity.objects.filter(extern_id=activity['id']).exists():
+                activity['existing_id'] = Activity.objects.filter(
+                    extern_id=activity['id']).first()
+
         activity_serializer = StravaActivitySerializer(
             data=filtered_activity_data, many=True)
         if activity_serializer.is_valid():
             activity_serializer.save()
             return JsonResponse({'message': 'Activities synced successfully!'}, status=status.HTTP_200_OK)
         return JsonResponse(activity_serializer.errors, safe=False, status=status.HTTP_400_BAD_REQUEST)
+        # return JsonResponse({'message': 'Activities synced successfully!'}, status=status.HTTP_200_OK)
