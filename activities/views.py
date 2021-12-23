@@ -9,6 +9,7 @@ from activities.serializers import ActivitySerializer, StravaActivitySerializer
 from rest_framework.decorators import api_view
 
 from strava_api import StravaApi
+from threading import Thread
 
 # Create your views here.
 
@@ -92,3 +93,81 @@ def activity_sync(request):
             return JsonResponse({'message': 'Activities synced successfully!'}, status=status.HTTP_200_OK)
         return JsonResponse(activity_serializer.errors, safe=False, status=status.HTTP_400_BAD_REQUEST)
         # return JsonResponse({'message': 'Activities synced successfully!'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def register_webhook(request):
+    if request.method == 'POST':
+        res = StravaApi.register_webhook()
+        return JsonResponse({'message': 'Webhook registered successfully!'}, status=status.HTTP_200_OK)
+
+
+# strava webhook only
+def save_activity_from_strava(json_body):
+    if json_body['object_type'] != 'activity':
+        return
+
+    activity_id = json_body['object_id']
+    if json_body['aspect_type'] == 'create':
+        # This is a new activity
+        strava_api_client = StravaApi()
+        activity_data = strava_api_client.get_activity(activity_id)
+        print(f'saving new activity {activity_data}')
+        activity_serializer = StravaActivitySerializer(data=activity_data)
+        if activity_serializer.is_valid():
+            activity_serializer.save()
+            print(f'activity saved')
+    elif json_body['aspect_type'] == 'delete':
+        activity = Activity.objects.get(extern_id=activity_id)
+        if activity:
+            print(f'deleting activity {activity_id}')
+            activity.delete()
+            print(f'activity deleted')
+
+    elif json_body['aspect_type'] == 'update':
+        print(f'updating activity {activity_id}')
+        # Need to get local activity and apply changes from strava.
+        # Can this be done with the serializer?
+
+
+@api_view(['GET', 'POST'])
+def receive_webhook(request):
+    if request.method == 'GET':
+        # """Response Strava Webhook API Challenge"""
+        mode = request.GET.get('hub.mode', None)
+        token = request.GET.get('hub.verify_token', None)
+        challenge = request.GET.get('hub.challenge', None)
+
+        print(
+            f"Received verify request. mode {mode}, token {token}")
+
+        if mode == 'subscribe' and token == 'STRAVA':
+            print(
+                f"Received verify request. Responding with {challenge}")
+            return JsonResponse({"hub.challenge": challenge})
+        return JsonResponse({'message': 'forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+    elif request.method == 'POST':
+        # """Receive Strava Webhook Notifications"""
+        json_body = JSONParser().parse(request)
+
+        print(f'Received Strava Push Notification: {json_body}')
+        # Complete Async so Strava Webhook Response is Instant
+        thread = Thread(target=save_activity_from_strava(json_body))
+        thread.start()
+
+        return JsonResponse({'message': 'event received!'}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def webhooks(request):
+    if request.method == 'GET':
+        res = StravaApi.view_webhook_subscriptions()
+        return JsonResponse(res, safe=False)
+
+
+@api_view(['DELETE'])
+def webhook(request, pk):
+    if request.method == 'DELETE':
+        StravaApi.delete_webhook_subscription(pk)
+        return JsonResponse({'message': 'Activity was deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
