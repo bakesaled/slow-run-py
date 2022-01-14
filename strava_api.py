@@ -5,7 +5,8 @@ import secrets
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 auth_url = "https://www.strava.com/oauth/token"
-activities_url = "https://www.strava.com/api/v3/athlete/activities"
+get_all_activities_url = "https://www.strava.com/api/v3/athlete/activities"
+get_activity_url = "https://www.strava.com/api/v3/activities"
 webhook_subscription_url = "https://www.strava.com/api/v3/push_subscriptions"
 
 auth_payload = {
@@ -31,7 +32,7 @@ class StravaApi():
         header = {'Authorization': 'Bearer ' + access_token}
         param = {'per_page': 5, 'page': 1}
         print("Requesting Activities...\n")
-        return requests.get(activities_url, headers=header, params=param).json()
+        return requests.get(get_all_activities_url, headers=header, params=param).json()
 
     def refresh_auth_token(self):
         # do refresh
@@ -44,9 +45,10 @@ class StravaApi():
     def get_activity(self, activity_id):
         access_token = self.refresh_auth_token()
         res = requests.get(
-            f'{activities_url}/{activity_id}',
+            f'{get_activity_url}/{activity_id}',
             headers={'Authorization': f'Bearer {access_token}'}
         )
+        print(f'got activity, status code: {res.status_code}')
         if res.status_code == 200:
             print(
                 f'Got activity info', res.json())

@@ -8,5 +8,5 @@ urlpatterns = [
     url(r'^api/register_webhook$', views.register_webhook),
     url(r'^api/receive_webhook$', views.receive_webhook),
     url(r'^api/webhooks$', views.webhooks),
-    url(r'^api/webhook/(?P<pk>[0-9]+)$', views.webhooks),
+    url(r'^api/webhook/(?P<pk>[0-9]+)$', views.webhook),
 ]

@@ -108,7 +108,13 @@ def save_activity_from_strava(json_body):
         return
 
     activity_id = json_body['object_id']
+    existing_activity = Activity.objects.get(extern_id=activity_id)
     if json_body['aspect_type'] == 'create':
+        if existing_activity:
+            print(
+                f'activity already exists, bailout from create {activity_id}')
+            return
+
         # This is a new activity
         strava_api_client = StravaApi()
         activity_data = strava_api_client.get_activity(activity_id)
@@ -118,16 +124,28 @@ def save_activity_from_strava(json_body):
             activity_serializer.save()
             print(f'activity saved')
     elif json_body['aspect_type'] == 'delete':
-        activity = Activity.objects.get(extern_id=activity_id)
-        if activity:
+        existing_activity = Activity.objects.get(extern_id=activity_id)
+        if existing_activity:
             print(f'deleting activity {activity_id}')
-            activity.delete()
+            existing_activity.delete()
             print(f'activity deleted')
 
     elif json_body['aspect_type'] == 'update':
+        if not existing_activity:
+            print(
+                f'activity does not exist, bailout from update {activity_id}')
+            return
         print(f'updating activity {activity_id}')
+        strava_api_client = StravaApi()
+        activity_data = strava_api_client.get_activity(activity_id)
+
         # Need to get local activity and apply changes from strava.
         # Can this be done with the serializer?
+        activity_data.existing_id = existing_activity.id
+        activity_serializer = StravaActivitySerializer(data=activity_data)
+        if activity_serializer.is_valid():
+            activity_serializer.save()
+            print(f'activity saved')
 
 
 @api_view(['GET', 'POST'])
