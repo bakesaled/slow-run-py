@@ -124,7 +124,6 @@ def save_activity_from_strava(json_body):
             activity_serializer.save()
             print(f'activity saved')
     elif json_body['aspect_type'] == 'delete':
-        existing_activity = Activity.objects.get(extern_id=activity_id)
         if existing_activity:
             print(f'deleting activity {activity_id}')
             existing_activity.delete()
