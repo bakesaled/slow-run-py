@@ -1,6 +1,6 @@
 import requests
 import urllib3
-import secrets
+import my_secrets
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -10,17 +10,17 @@ get_activity_url = "https://www.strava.com/api/v3/activities"
 webhook_subscription_url = "https://www.strava.com/api/v3/push_subscriptions"
 
 auth_payload = {
-    'client_id': secrets.client_id,
-    'client_secret': secrets.client_secret,
-    'refresh_token': secrets.refresh_token,
+    'client_id': my_secrets.client_id,
+    'client_secret': my_secrets.client_secret,
+    'refresh_token': my_secrets.refresh_token,
     'grant_type': "refresh_token",
     'f': 'json'
 }
 
 sub_payload = {
-    'client_id': secrets.client_id,
-    'client_secret': secrets.client_secret,
-    'callback_url': f'http://{secrets.ngrok_url}/api/receive_webhook',
+    'client_id': my_secrets.client_id,
+    'client_secret': my_secrets.client_secret,
+    'callback_url': f'http://{my_secrets.ngrok_url}/api/receive_webhook',
     'verify_token': "STRAVA"
 }
 
@@ -61,8 +61,8 @@ class StravaApi():
         print(f'push_subscriptions response {res}')
 
     def view_webhook_subscriptions():
-        param = {'client_id': secrets.client_id,
-                 'client_secret': secrets.client_secret}
+        param = {'client_id': my_secrets.client_id,
+                 'client_secret': my_secrets.client_secret}
         res = requests.get(webhook_subscription_url, params=param)
         if res.status_code == 200:
             print(
@@ -73,8 +73,8 @@ class StravaApi():
     def delete_webhook_subscription(id):
         payload = {
             'id': id,
-            'client_id': secrets.client_id,
-            'client_secret': secrets.client_secret
+            'client_id': my_secrets.client_id,
+            'client_secret': my_secrets.client_secret
         }
         res = requests.delete(
             f'{webhook_subscription_url}/{id}', data=payload, verify=False)
