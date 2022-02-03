@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'activities.apps.ActivitiesConfig',
     'authentication.apps.AuthenticationConfig',
     'core.apps.CoreConfig',
+    'profiles.apps.ProfilesConfig'
 ]
 
 MIDDLEWARE = [

@@ -10,51 +10,60 @@ from .renderers import UserJSONRenderer
 
 
 class UserRetrieveUpdateAPIView(RetrieveUpdateAPIView):
-    permission_classes = (IsAuthenticated,)
-    renderer_classes = (UserJSONRenderer,)
-    serializer_class = UserSerializer
+  permission_classes = (IsAuthenticated,)
+  renderer_classes = (UserJSONRenderer,)
+  serializer_class = UserSerializer
 
-    def retrieve(self, request, *args, **kwargs):
-        serializer = self.serializer_class(request.user)
+  def retrieve(self, request, *args, **kwargs):
+    serializer = self.serializer_class(request.user)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def update(self, request, *args, **kwargs):
-        serializer_data = request.data.get('user', {})
+  def update(self, request, *args, **kwargs):
+    user_data = request.data.get('user', {})
 
-        serializer = self.serializer_class(
-            request.user, data=serializer_data, partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+    serializer_data = {
+        'username': user_data.get('username', request.user.username),
+        'email': user_data.get('email', request.user.email),
+        'profile': {
+            'bio': user_data.get('bio', request.user.profile.bio),
+            'image': user_data.get('image', request.user.profile.image)
+        }
+    }
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    serializer = self.serializer_class(
+        request.user, data=serializer_data, partial=True
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class RegistrationAPIView(APIView):
-    permission_classes = (AllowAny,)
-    renderer_classes = (UserJSONRenderer,)
-    serializer_class = RegistrationSerializer
+  permission_classes = (AllowAny,)
+  renderer_classes = (UserJSONRenderer,)
+  serializer_class = RegistrationSerializer
 
-    def post(self, request):
-        user = request.data.get('user', {})
+  def post(self, request):
+    user = request.data.get('user', {})
 
-        serializer = self.serializer_class(data=user)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+    serializer = self.serializer_class(data=user)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class LoginAPIView(APIView):
-    permission_classes = (AllowAny,)
-    renderer_classes = (UserJSONRenderer,)
-    serializer_class = LoginSerializer
+  permission_classes = (AllowAny,)
+  renderer_classes = (UserJSONRenderer,)
+  serializer_class = LoginSerializer
 
-    def post(self, request):
-        user = request.data.get('user', {})
+  def post(self, request):
+    user = request.data.get('user', {})
 
-        serializer = self.serializer_class(data=user)
-        serializer.is_valid(raise_exception=True)
+    serializer = self.serializer_class(data=user)
+    serializer.is_valid(raise_exception=True)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.data, status=status.HTTP_200_OK)

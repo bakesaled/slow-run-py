@@ -1,17 +1,10 @@
-import json
-
-from rest_framework.renderers import JSONRenderer
+from core.renderers import ConduitJSONRenderer
 
 
-class UserJSONRenderer(JSONRenderer):
-    charset = 'utf-8'
+class UserJSONRenderer(ConduitJSONRenderer):
+  object_label = 'user'
 
-    def render(self, data, media_type=None, renderer_context=None):
-        errors = data.get('errors', None)
+  def render(self, data, media_type=None, renderer_context=None):
+    errors = data.get('errors', None)
 
-        if errors is not None:
-            return super(UserJSONRenderer, self).render(data)
-
-        return json.dumps({
-            'user': data
-        })
+    return super(UserJSONRenderer, self).render(data)
