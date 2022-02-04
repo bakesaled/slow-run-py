@@ -1,76 +1,35 @@
-from ast import expr_context
-import jwt
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from django.conf import settings
 
-from rest_framework import authentication, exceptions
+from rest_framework import exceptions
+from rest_framework.authentication import CSRFCheck
 
 from .models import User
 
+"""https://www.procoding.org/jwt-token-as-httponly-cookie-in-django/"""
 
-class JWTAuthentication(authentication.BaseAuthentication):
-  authentication_header_prefix = 'Token'
-
+class JWTAuthentication(JWTAuthentication):
   def authenticate(self, request):
-    """
-    The `authenticate` method is called on every request regardless of
-    whether the endpoint requires authentication. 
+    header = self.get_header(request)
 
-    `authenticate` has two possible return values:
+    if header is None:
+      raw_token = request.COOKIES.get(
+          settings.SIMPLE_JWT['AUTH_COOKIE']) or None
+    else:
+      raw_token = self.get_raw_token(header)
 
-    1) `None` - We return `None` if we do not wish to authenticate. Usually
-                this means we know authentication will fail. An example of
-                this is when the request does not include a token in the
-                headers.
-
-    2) `(user, token)` - We return a user/token combination when 
-                          authentication is successful.
-
-                        If neither case is met, that means there's an error 
-                        and we do not return anything.
-                        We simple raise the `AuthenticationFailed` 
-                        exception and let Django REST Framework
-                        handle the rest.
-    """
-    request.user = None
-
-    auth_header = authentication.get_authorization_header(request).split()
-    auth_header_prefix = self.authentication_header_prefix.lower()
-
-    if not auth_header:
+    if raw_token is None:
       return None
 
-    if len(auth_header) == 1:
-      return None
+    validated_token = self.get_validated_token(raw_token)
+    self.enforce_csrf(request)
 
-    elif len(auth_header) > 2:
-      return None
+    return self.get_user(validated_token), validated_token
 
-    prefix = auth_header[0].decode('utf-8')
-    token = auth_header[1].decode('utf-8')
-
-    if prefix.lower() != auth_header_prefix:
-      return None
-
-    return self._authenticate_credentials(request, token)
-
-  def _authenticate_credentials(self, request, token):
-    try:
-      payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-    except:
-      msg = 'Invalid authentication. Could not decode token.'
-      raise exceptions.AuthenticationFailed(msg)
-    # print(token)
-    # payload = token
-
-    try:
-      user = User.objects.get(pk=payload['id'])
-    except User.DoesNotExist:
-      msg = 'No user matching this token was found.'
-      raise exceptions.AuthenticationFailed(msg)
-
-    if not user.is_active:
-      msg = 'This user has been deactivated.'
-      raise exceptions.AuthenticationFailed(msg)
-
-    return (user, token)
+  def enforce_csrf(self, request):
+    check = CSRFCheck()
+    check.process_request(request)
+    reason = check.process_view(request, None, (), {})
+    if reason:
+      raise exceptions.PermissionDenied('CSRF failed: %s.' % reason)

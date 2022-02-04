@@ -3,3 +3,4 @@ seaborn
 djangorestframework
 pyjwt[crypto]
 django-extensions
+djangorestframework-simplejwt

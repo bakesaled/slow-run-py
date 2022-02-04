@@ -56,7 +56,6 @@ class LoginSerializer(serializers.Serializer):
     return {
         'email': user.email,
         'username': user.username,
-        'token': user.token
     }
 
 
@@ -74,9 +73,7 @@ class UserSerializer(serializers.ModelSerializer):
   class Meta:
     model = User
     fields = ('email', 'username', 'password',
-              'token', 'profile', 'bio', 'image',)
-
-    read_only_fields = ('token',)
+              'profile', 'bio', 'image',)
 
   def update(self, instance, validated_data):
     # remove password from fields because it is hashed

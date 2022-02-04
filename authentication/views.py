@@ -5,6 +5,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from django.conf import settings
+from django.middleware import csrf
+from django.contrib.auth import authenticate
+
 from .serializers import LoginSerializer, RegistrationSerializer, UserSerializer
 from .renderers import UserJSONRenderer
 
@@ -61,9 +67,38 @@ class LoginAPIView(APIView):
   serializer_class = LoginSerializer
 
   def post(self, request):
-    user = request.data.get('user', {})
+    user_data = request.data.get('user', {})
 
-    serializer = self.serializer_class(data=user)
+    serializer = self.serializer_class(data=user_data)
     serializer.is_valid(raise_exception=True)
+    email = request.data.get('user', dict()).get('email')
+    password = request.data.get('user', dict()).get('password')
+    user = authenticate(username=email, password=password)
 
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    data = get_tokens_for_user(user)
+
+    response = Response()
+    response.set_cookie(
+        key=settings.SIMPLE_JWT['AUTH_COOKIE'],
+        value=data["access"],
+        expires=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
+        secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+        httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+        samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
+    )
+    csrf.get_token(request)
+    response.data = {
+        "Successs": "Login Successful",
+        "data": data
+    }
+    response.status_code = status.HTTP_200_OK
+
+    return response
+
+
+def get_tokens_for_user(user):
+  refresh = RefreshToken.for_user(user)
+  return {
+      'refresh': str(refresh),
+      'access': str(refresh.access_token),
+  }
