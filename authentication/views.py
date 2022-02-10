@@ -96,6 +96,18 @@ class LoginAPIView(APIView):
     return response
 
 
+class LogoutAPIView(APIView):
+  permission_classes = (AllowAny,)
+
+  def post(self, request):
+    # request.user
+    # auth.logout(request)
+    response = Response({"detail": "Successfully logged out."},
+                        status=status.HTTP_200_OK)
+    response.delete_cookie(settings.SIMPLE_JWT['AUTH_COOKIE'])
+    return response
+
+
 def get_tokens_for_user(user):
   refresh = RefreshToken.for_user(user)
   return {
