@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from django.contrib.auth import authenticate
 
@@ -25,38 +26,22 @@ class RegistrationSerializer(serializers.ModelSerializer):
     return User.objects.create_user(**validated_data)
 
 
-class LoginSerializer(serializers.Serializer):
+class LoginSerializer(TokenObtainPairSerializer):
   email = serializers.CharField(max_length=255)
   username = serializers.CharField(max_length=255, read_only=True)
   password = serializers.CharField(max_length=128, write_only=True)
   token = serializers.CharField(max_length=255, read_only=True)
 
-  def validate(self, data):
-    email = data.get('email', None)
-    password = data.get('password', None)
+  def validate(self, attrs):
+    data = super().validate(attrs)
 
-    if email is None:
-      raise serializers.ValidationError(
-          'An email address is required to log in')
+    refresh = self.get_token(self.user)
 
-    if password is None:
-      raise serializers.ValidationError(
-          'A password is required to log in')
+    data['user'] = UserSerializer(self.user).data
+    data['refresh'] = str(refresh)
+    data['access'] = str(refresh.access_token)
 
-    user = authenticate(username=email, password=password)
-
-    if user is None:
-      raise serializers.ValidationError(
-          'A user with this email and password was not found.')
-
-    if not user.is_active:
-      raise serializers.ValidationError(
-          'This user has been deactivated.')
-
-    return {
-        'email': user.email,
-        'username': user.username,
-    }
+    return data
 
 
 class UserSerializer(serializers.ModelSerializer):

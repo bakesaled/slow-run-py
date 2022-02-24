@@ -31,6 +31,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     'localhost',
+    'localhost:3000',
     '127.0.0.1',
     my_secrets.ngrok_url
 ]
@@ -47,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_extensions',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'jwt',
     'cryptography',
@@ -180,18 +182,6 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 
-    # custom
-    # Cookie name. Enables cookies if value is set.
-    'AUTH_COOKIE': 'access_token',
-    # A string like "example.com", or None for standard domain cookie.
-    'AUTH_COOKIE_DOMAIN': None,
-    # Whether the auth cookies should be secure (https:// only).
-    'AUTH_COOKIE_SECURE': False,
-    # Http only cookie flag.It's not fetch by javascript.
-    'AUTH_COOKIE_HTTP_ONLY': True,
-    'AUTH_COOKIE_PATH': '/',        # The path of the auth cookie.
-    # Whether to set the flag restricting cookie leaks on cross-site requests. This can be 'Lax', 'Strict', or None to disable the flag.
-    'AUTH_COOKIE_SAMESITE': 'Lax',
 }
 
 # Tell Django about the custom `User` model we created. The string

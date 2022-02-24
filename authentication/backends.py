@@ -9,6 +9,7 @@ from .models import User
 
 """https://www.procoding.org/jwt-token-as-httponly-cookie-in-django/"""
 
+
 class JWTAuthentication(JWTAuthentication):
   def authenticate(self, request):
     header = self.get_header(request)
@@ -23,13 +24,7 @@ class JWTAuthentication(JWTAuthentication):
       return None
 
     validated_token = self.get_validated_token(raw_token)
-    self.enforce_csrf(request)
 
     return self.get_user(validated_token), validated_token
 
-  def enforce_csrf(self, request):
-    check = CSRFCheck()
-    check.process_request(request)
-    reason = check.process_view(request, None, (), {})
-    if reason:
-      raise exceptions.PermissionDenied('CSRF failed: %s.' % reason)
+ 

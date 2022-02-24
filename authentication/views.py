@@ -1,15 +1,20 @@
+from lib2to3.pgen2.tokenize import TokenError
 from os import stat
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.exceptions import InvalidToken
 
-from django.conf import settings
-from django.middleware import csrf
-from django.contrib.auth import authenticate
+# from django.conf import settings
+# from django.middleware import csrf
+# from django.contrib.auth import authenticate
 
 from .serializers import LoginSerializer, RegistrationSerializer, UserSerializer
 from .renderers import UserJSONRenderer
@@ -61,56 +66,37 @@ class RegistrationAPIView(APIView):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class LoginAPIView(APIView):
+class LoginAPIView(TokenObtainPairView):
   permission_classes = (AllowAny,)
-  renderer_classes = (UserJSONRenderer,)
   serializer_class = LoginSerializer
 
   def post(self, request):
     user_data = request.data.get('user', {})
 
     serializer = self.serializer_class(data=user_data)
-    serializer.is_valid(raise_exception=True)
-    email = request.data.get('user', dict()).get('email')
-    password = request.data.get('user', dict()).get('password')
-    user = authenticate(username=email, password=password)
 
-    data = get_tokens_for_user(user)
+    try:
+      serializer.is_valid(raise_exception=True)
+    except TokenError as e:
+      raise InvalidToken(e.args[0])
 
-    response = Response()
-    response.set_cookie(
-        key=settings.SIMPLE_JWT['AUTH_COOKIE'],
-        value=data["access"],
-        expires=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
-        secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-        httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-        samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
-    )
-    csrf.get_token(request)
-    response.data = {
-        "Successs": "Login Successful",
-        "data": data
-    }
-    response.status_code = status.HTTP_200_OK
-
-    return response
+    return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 
 class LogoutAPIView(APIView):
-  permission_classes = (AllowAny,)
+  permission_classes = (IsAuthenticated,)
 
   def post(self, request):
-    # request.user
-    # auth.logout(request)
-    response = Response({"detail": "Successfully logged out."},
-                        status=status.HTTP_200_OK)
-    response.delete_cookie(settings.SIMPLE_JWT['AUTH_COOKIE'])
-    return response
+    refresh_token = request.data['refresh_token']
+    token = RefreshToken(refresh_token)
+    token.blacklist()
+
+    return Response(status=status.HTTP_205_RESET_CONTENT)
 
 
-def get_tokens_for_user(user):
-  refresh = RefreshToken.for_user(user)
-  return {
-      'refresh': str(refresh),
-      'access': str(refresh.access_token),
-  }
+class RefreshAPIView(TokenRefreshView):
+  permission_classes = (AllowAny,)
+  http_method_names = ['post']
+
+  def create(self, request, *args, **kwargs):
+    serializer = self.get_serializer(data=request.data)
